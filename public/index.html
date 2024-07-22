@@ -142,6 +142,22 @@
         height: auto; /* Maintain aspect ratio */
         margin-bottom: 20px; /* Keep the existing margin */
     }
+    .slider-container {
+    width: 100%;
+    max-width: 400px;
+    margin: 20px auto;
+    text-align: center;
+}
+#strengthSlider {
+    width: 100%;
+}
+.slider-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 5px;
+    font-size: 12px;
+    color: #666;
+}
         @media (max-width: 600px) {
             .upload-container {
                 flex-direction: column;
@@ -184,6 +200,13 @@
                     <div class="plus-sign">+</div>
                     <img id="preview2" src="" alt="Preview 2" hidden>
                 </div>
+            </div>
+        </div>
+        <div class="slider-container">
+            <input type="range" id="strengthSlider" min="0" max="1" step="0.1" value="0.6">
+            <div class="slider-labels">
+                <span>More like you</span>
+                <span>More like the hairstyle image</span>
             </div>
         </div>
         <button id="generateBtn">Generate</button>
@@ -231,42 +254,43 @@
             handleUpload(upload2, file2, preview2);
 
             generateBtn.addEventListener('click', () => {
-                const formData = {
-                    image1: preview1.src,  // reference image
-                    image2: preview2.src   // selfie image
-                };
+    const formData = {
+        image1: preview1.src,  // reference image
+        image2: preview2.src,   // selfie image
+        base_image_strength: document.getElementById('strengthSlider').value
+    };
 
-                loadingModal.style.display = 'block';
-                generateBtn.disabled = true;
+    loadingModal.style.display = 'block';
+    generateBtn.disabled = true;
 
-                fetch('/upload', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(formData)
-                })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(err => { throw err; });
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('Success:', data);
-                    if (data.output) {
-                        displayOutput(data.output);
-                    } else if (data.id) {
-                        pollStatus(data.id);
-                    }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred. Please try again.');
-                    loadingModal.style.display = 'none';
-                    generateBtn.disabled = false;
-                });
-            });
+    fetch('/upload', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => { throw err; });
+        }
+        return response.json();
+    })
+    .then(data => {
+        console.log('Success:', data);
+        if (data.output) {
+            displayOutput(data.output);
+        } else if (data.id) {
+            pollStatus(data.id);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred. Please try again.');
+        loadingModal.style.display = 'none';
+        generateBtn.disabled = false;
+    });
+});
 
             function pollStatus(id) {
                 pollInterval = setInterval(() => {

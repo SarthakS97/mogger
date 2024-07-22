@@ -27,7 +27,7 @@ app.post('/upload', async (req, res) => {
             style_image: identity_image,
             identity_image: identity_image,
             composition_image: base_image,
-            base_image_strength: 0.4
+            base_image_strength: parseFloat(req.body.base_image_strength)
         };
 
         const replicateApiKey = process.env.REPLICATE_API_KEY; // Replace with your actual API key
