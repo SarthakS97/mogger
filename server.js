@@ -18,7 +18,7 @@ const checkIpUsage = (req, res, next) => {
     const ip = req.ip;
     const usageCount = ipUsage.get(ip) || 0;
     
-    if (usageCount >= 5) {
+    if (usageCount >= 3) {
         return res.status(429).json({ error: 'Usage limit exceeded' });
     }
     
