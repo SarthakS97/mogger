@@ -5,9 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Try Any Hairstyle</title>
     <style>
-        html {
-            scroll-behavior: smooth;
-        }
+        html { scroll-behavior: smooth; }
         body {
             font-family: Arial, sans-serif;
             margin: 0;
@@ -101,9 +99,7 @@
             cursor: pointer;
             margin-top: 20px;
         }
-        #generateBtn:hover {
-            background-color: #45a049;
-        }
+        #generateBtn:hover { background-color: #45a049; }
         #generateBtn:disabled {
             background-color: #cccccc;
             cursor: not-allowed;
@@ -137,27 +133,25 @@
             border-radius: 10px;
         }
         .modal-content img {
-        width: 100%; /* Ensure the image takes full width of its container */
-        max-width: none; /* Remove the maximum width constraint */
-        height: auto; /* Maintain aspect ratio */
-        margin-bottom: 20px; /* Keep the existing margin */
-    }
-    .slider-container {
-    width: 100%;
-    max-width: 400px;
-    margin: 20px auto;
-    text-align: center;
-}
-#strengthSlider {
-    width: 100%;
-}
-.slider-labels {
-    display: flex;
-    justify-content: space-between;
-    margin-top: 5px;
-    font-size: 12px;
-    color: #666;
-}
+            width: 100%;
+            max-width: none;
+            height: auto;
+            margin-bottom: 20px;
+        }
+        .slider-container {
+            width: 100%;
+            max-width: 400px;
+            margin: 20px auto;
+            text-align: center;
+        }
+        #strengthSlider { width: 100%; }
+        .slider-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 12px;
+            color: #666;
+        }
         @media (max-width: 600px) {
             .upload-container {
                 flex-direction: column;
@@ -232,6 +226,7 @@
             const loadingModal = document.getElementById('loadingModal');
 
             let pollInterval;
+            let usageCount = 0;
 
             function handleUpload(uploadField, fileInput, previewImg) {
                 uploadField.addEventListener('click', () => fileInput.click());
@@ -253,44 +248,66 @@
             handleUpload(upload1, file1, preview1);
             handleUpload(upload2, file2, preview2);
 
+            function checkUsageLimit() {
+                usageCount++;
+                if (usageCount > 5) {
+                    loadingModal.style.display = 'block';
+                    loadingModal.querySelector('p').textContent = "You are out of free tries. Go to tryhairstyle.com to try the hairstyles best suited for your face";
+                    return false;
+                }
+                return true;
+            }
+
             generateBtn.addEventListener('click', () => {
-    const formData = {
-        image1: preview1.src,  // reference image
-        image2: preview2.src,   // selfie image
-        base_image_strength: document.getElementById('strengthSlider').value
-    };
+                if (!checkUsageLimit()) {
+                    return;
+                }
 
-    loadingModal.style.display = 'block';
-    generateBtn.disabled = true;
+                const formData = {
+                    image1: preview1.src,
+                    image2: preview2.src,
+                    base_image_strength: document.getElementById('strengthSlider').value
+                };
 
-    fetch('/upload', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(formData)
-    })
-    .then(response => {
-        if (!response.ok) {
-            return response.json().then(err => { throw err; });
-        }
-        return response.json();
-    })
-    .then(data => {
-        console.log('Success:', data);
-        if (data.output) {
-            displayOutput(data.output);
-        } else if (data.id) {
-            pollStatus(data.id);
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
-        loadingModal.style.display = 'none';
-        generateBtn.disabled = false;
-    });
-});
+                loadingModal.style.display = 'block';
+                loadingModal.querySelector('p').textContent = "Loading...";
+                generateBtn.disabled = true;
+
+                fetch('/upload', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        if (response.status === 429) {
+                            throw new Error('Usage limit exceeded');
+                        }
+                        return response.json().then(err => { throw err; });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('Success:', data);
+                    if (data.output) {
+                        displayOutput(data.output);
+                    } else if (data.id) {
+                        pollStatus(data.id);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    if (error.message === 'Usage limit exceeded') {
+                        loadingModal.querySelector('p').textContent = "You are out of free tries. Go to tryhairstyle.com to try the hairstyles best suited for your face";
+                    } else {
+                        alert('An error occurred. Please try again.');
+                        loadingModal.style.display = 'none';
+                        generateBtn.disabled = false;
+                    }
+                });
+            });
 
             function pollStatus(id) {
                 pollInterval = setInterval(() => {
@@ -312,7 +329,7 @@
                         loadingModal.style.display = 'none';
                         generateBtn.disabled = false;
                     });
-                }, 2000);  // Poll every 2 seconds
+                }, 2000);
             }
 
             function displayOutput(output) {
@@ -338,12 +355,8 @@
                     document.querySelector('.container').appendChild(outputContainer);
                 }
 
-                // Wait for the image to load before scrolling
                 outputImage.onload = function() {
-                    // Calculate the position to scroll to
                     const scrollTarget = outputContainer.offsetTop - window.innerHeight / 2 + outputImage.height / 2;
-                    
-                    // Scroll to the calculated position
                     window.scrollTo({
                         top: scrollTarget,
                         behavior: 'smooth'
