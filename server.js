@@ -15,14 +15,14 @@ app.use(bodyParser.json({limit: '50mb'}));
 
 // Middleware to check IP usage
 const checkIpUsage = (req, res, next) => {
-    // const ip = req.ip;
-    // const usageCount = ipUsage.get(ip) || 0;
+    const ip = req.ip;
+    const usageCount = ipUsage.get(ip) || 0;
     
-    // if (usageCount >= 3) {
-    //     return res.status(429).json({ error: 'Usage limit exceeded' });
-    // }
+    if (usageCount >= 3) {
+        return res.status(429).json({ error: 'Usage limit exceeded' });
+    }
     
-    // ipUsage.set(ip, usageCount + 1);
+    ipUsage.set(ip, usageCount + 1);
     next();
 };
 

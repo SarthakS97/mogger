@@ -166,6 +166,22 @@
                 width: 80%;
                 max-width: 200px;
             }
+            .more-hairstyles-btn {
+        background-color: #4CAF50;
+        border: none;
+        color: white;
+        padding: 15px 32px;
+        text-align: center;
+        text-decoration: none;
+        display: inline-block;
+        font-size: 16px;
+        margin: 20px 2px;
+        cursor: pointer;
+        border-radius: 5px;
+    }
+    .more-hairstyles-btn:hover {
+        background-color: #45a049;
+    }
         }
     </style>
 </head>
@@ -204,7 +220,7 @@
                 <span>More like the hairstyle image</span>
             </div>
         </div>
-        <button id="generateBtn">Generate</button>
+        <button id="generateBtn">Create</button>
     </div>
     <div id="loadingModal" class="modal">
         <div class="modal-content">
@@ -249,12 +265,12 @@
             handleUpload(upload2, file2, preview2);
 
             function checkUsageLimit() {
-                // usageCount++;
-                // if (usageCount > 3) {
-                //     loadingModal.style.display = 'block';
-                //     loadingModal.querySelector('p').textContent = "You are out of free tries. Go to tryhairstyle.com to try the hairstyles best suited for your face";
-                //     return false;
-                // }
+                usageCount++;
+                if (usageCount > 3) {
+                    loadingModal.style.display = 'block';
+                    loadingModal.querySelector('p').textContent = "You are out of free tries. Go to tryhairstyle.com to try the hairstyles best suited for your face";
+                    return false;
+                }
                 return true;
             }
 
@@ -331,38 +347,47 @@
                     });
                 }, 2000);
             }
-
             function displayOutput(output) {
-                loadingModal.style.display = 'none';
-                generateBtn.disabled = false;
+    loadingModal.style.display = 'none';
+    generateBtn.disabled = false;
 
-                const outputContainer = document.createElement('div');
-                outputContainer.id = 'outputContainer';
-                outputContainer.style.marginTop = '20px';
-                outputContainer.style.textAlign = 'center';
+    const outputContainer = document.createElement('div');
+    outputContainer.id = 'outputContainer';
+    outputContainer.style.marginTop = '20px';
+    outputContainer.style.textAlign = 'center';
 
-                const outputImage = document.createElement('img');
-                outputImage.src = output;
-                outputImage.style.maxWidth = '100%';
-                outputImage.style.borderRadius = '10px';
+    const outputImage = document.createElement('img');
+    outputImage.src = output;
+    outputImage.style.maxWidth = '100%';
+    outputImage.style.borderRadius = '10px';
 
-                outputContainer.appendChild(outputImage);
+    outputContainer.appendChild(outputImage);
 
-                const existingOutput = document.getElementById('outputContainer');
-                if (existingOutput) {
-                    existingOutput.replaceWith(outputContainer);
-                } else {
-                    document.querySelector('.container').appendChild(outputContainer);
-                }
+    // Create the "Get more hairstyles" button
+    const moreHairstylesBtn = document.createElement('a');
+    moreHairstylesBtn.href = 'https://tryhairstyle.com';
+    moreHairstylesBtn.target = '_blank';
+    moreHairstylesBtn.className = 'more-hairstyles-btn';
+    moreHairstylesBtn.textContent = 'Get more hairstyles';
 
-                outputImage.onload = function() {
-                    const scrollTarget = outputContainer.offsetTop - window.innerHeight / 2 + outputImage.height / 2;
-                    window.scrollTo({
-                        top: scrollTarget,
-                        behavior: 'smooth'
-                    });
-                };
-            }
+    // Add the button after the image
+    outputContainer.appendChild(moreHairstylesBtn);
+
+    const existingOutput = document.getElementById('outputContainer');
+    if (existingOutput) {
+        existingOutput.replaceWith(outputContainer);
+    } else {
+        document.querySelector('.container').appendChild(outputContainer);
+    }
+
+    outputImage.onload = function() {
+        const scrollTarget = outputContainer.offsetTop - window.innerHeight / 2 + outputImage.height / 2;
+        window.scrollTo({
+            top: scrollTarget,
+            behavior: 'smooth'
+        });
+    };
+}
         });
     </script>
 </body>
