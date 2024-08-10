@@ -112,32 +112,7 @@
             max-width: 100%;
             border-radius: 10px;
         }
-        .modal {
-            display: none;
-            position: fixed;
-            z-index: 1000;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(0,0,0,0.5);
-        }
-        .modal-content {
-            background-color: #fefefe;
-            margin: 15% auto;
-            padding: 20px;
-            border: 1px solid #888;
-            width: 80%;
-            max-width: 400px;
-            text-align: center;
-            border-radius: 10px;
-        }
-        .modal-content img {
-            width: 100%;
-            max-width: none;
-            height: auto;
-            margin-bottom: 20px;
-        }
+        
         .slider-container {
             width: 100%;
             max-width: 400px;
@@ -222,13 +197,13 @@
         </div>
         <button id="generateBtn">Create</button>
     </div>
-    <div id="loadingModal" class="modal">
+    <!-- <div id="loadingModal" class="modal">
         <div class="modal-content">
             <a href="https://tryhairstyle.com" target="_blank">
             <img src="https://storage.googleapis.com/mullet_mania/tryhairstyleBanner%20(1).png" alt="Try Hairstyle Banner">
             <p>Loading...</p>
         </div>
-    </div>
+    </div> -->
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
@@ -239,14 +214,14 @@
             const preview1 = document.getElementById('preview1');
             const preview2 = document.getElementById('preview2');
             const generateBtn = document.getElementById('generateBtn');
-            const loadingModal = document.getElementById('loadingModal');
-
+    
             let pollInterval;
-            let usageCount = 0;
-
+            let pollCount = 0;
+            const MAX_POLLS = 30; // 1 minute timeout (2 seconds * 30)
+    
             function handleUpload(uploadField, fileInput, previewImg) {
                 uploadField.addEventListener('click', () => fileInput.click());
-
+    
                 fileInput.addEventListener('change', (e) => {
                     const file = e.target.files[0];
                     if (file) {
@@ -260,35 +235,59 @@
                     }
                 });
             }
-
+    
             handleUpload(upload1, file1, preview1);
             handleUpload(upload2, file2, preview2);
-
-            function checkUsageLimit() {
-                usageCount++;
-                if (usageCount > 3) {
-                    loadingModal.style.display = 'block';
-                    loadingModal.querySelector('p').textContent = "You are out of free tries. Go to tryhairstyle.com to try the hairstyles best suited for your face";
-                    return false;
-                }
-                return true;
+    
+            function pollStatus(id) {
+                pollInterval = setInterval(() => {
+                    pollCount++;
+                    if (pollCount > MAX_POLLS) {
+                        clearInterval(pollInterval);
+                        handleError('Processing timed out. Please try again.');
+                        return;
+                    }
+    
+                    fetch(`/check-status/${id}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status === 'succeeded') {
+                            clearInterval(pollInterval);
+                            displayOutput(data.output);
+                        } else if (data.status === 'failed') {
+                            clearInterval(pollInterval);
+                            handleError('Image processing failed. Please try again.');
+                        } else if (data.status !== 'processing') {
+                            clearInterval(pollInterval);
+                            handleError('Unexpected status. Please try again.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        clearInterval(pollInterval);
+                        handleError('An error occurred while checking status. Please try again.');
+                    });
+                }, 2000);
             }
-
+    
+            function handleError(message) {
+                console.error('Error:', message);
+                alert(message);
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Create';
+            }
+    
             generateBtn.addEventListener('click', () => {
-                if (!checkUsageLimit()) {
-                    return;
-                }
-
                 const formData = {
                     image1: preview1.src,
                     image2: preview2.src,
                     base_image_strength: document.getElementById('strengthSlider').value
                 };
-
-                loadingModal.style.display = 'block';
-                loadingModal.querySelector('p').textContent = "Loading...";
+    
                 generateBtn.disabled = true;
-
+                generateBtn.textContent = 'Generating...';
+                pollCount = 0;  // Reset poll count
+    
                 fetch('/upload', {
                     method: 'POST',
                     headers: {
@@ -298,9 +297,6 @@
                 })
                 .then(response => {
                     if (!response.ok) {
-                        if (response.status === 429) {
-                            throw new Error('Usage limit exceeded');
-                        }
                         return response.json().then(err => { throw err; });
                     }
                     return response.json();
@@ -311,83 +307,55 @@
                         displayOutput(data.output);
                     } else if (data.id) {
                         pollStatus(data.id);
+                    } else {
+                        handleError('Unexpected response. Please try again.');
                     }
                 })
                 .catch(error => {
                     console.error('Error:', error);
-                    if (error.message === 'Usage limit exceeded') {
-                        loadingModal.querySelector('p').textContent = "You are out of free tries. Go to tryhairstyle.com to try the hairstyles best suited for your face";
-                    } else {
-                        alert('An error occurred. Please try again.');
-                        loadingModal.style.display = 'none';
-                        generateBtn.disabled = false;
-                    }
+                    handleError('An error occurred during upload. Please try again.');
                 });
             });
-
-            function pollStatus(id) {
-                pollInterval = setInterval(() => {
-                    fetch(`/check-status/${id}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'succeeded') {
-                            clearInterval(pollInterval);
-                            displayOutput(data.output);
-                        } else if (data.status === 'failed') {
-                            clearInterval(pollInterval);
-                            throw new Error('Processing failed');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        clearInterval(pollInterval);
-                        alert('An error occurred. Please try again.');
-                        loadingModal.style.display = 'none';
-                        generateBtn.disabled = false;
-                    });
-                }, 2000);
-            }
+    
             function displayOutput(output) {
-    loadingModal.style.display = 'none';
-    generateBtn.disabled = false;
-
-    const outputContainer = document.createElement('div');
-    outputContainer.id = 'outputContainer';
-    outputContainer.style.marginTop = '20px';
-    outputContainer.style.textAlign = 'center';
-
-    const outputImage = document.createElement('img');
-    outputImage.src = output;
-    outputImage.style.maxWidth = '100%';
-    outputImage.style.borderRadius = '10px';
-
-    outputContainer.appendChild(outputImage);
-
-    // Create the "Get more hairstyles" button
-    const moreHairstylesBtn = document.createElement('a');
-    moreHairstylesBtn.href = 'https://tryhairstyle.com';
-    moreHairstylesBtn.target = '_blank';
-    moreHairstylesBtn.className = 'more-hairstyles-btn';
-    moreHairstylesBtn.textContent = 'Get more hairstyles';
-
-    // Add the button after the image
-    outputContainer.appendChild(moreHairstylesBtn);
-
-    const existingOutput = document.getElementById('outputContainer');
-    if (existingOutput) {
-        existingOutput.replaceWith(outputContainer);
-    } else {
-        document.querySelector('.container').appendChild(outputContainer);
-    }
-
-    outputImage.onload = function() {
-        const scrollTarget = outputContainer.offsetTop - window.innerHeight / 2 + outputImage.height / 2;
-        window.scrollTo({
-            top: scrollTarget,
-            behavior: 'smooth'
-        });
-    };
-}
+                generateBtn.disabled = false;
+                generateBtn.textContent = 'Create';
+    
+                const outputContainer = document.createElement('div');
+                outputContainer.id = 'outputContainer';
+                outputContainer.style.marginTop = '20px';
+                outputContainer.style.textAlign = 'center';
+    
+                const outputImage = document.createElement('img');
+                outputImage.src = output;
+                outputImage.style.maxWidth = '100%';
+                outputImage.style.borderRadius = '10px';
+    
+                outputContainer.appendChild(outputImage);
+    
+                const moreHairstylesBtn = document.createElement('a');
+                moreHairstylesBtn.href = 'https://tryhairstyle.com';
+                moreHairstylesBtn.target = '_blank';
+                moreHairstylesBtn.className = 'more-hairstyles-btn';
+                moreHairstylesBtn.textContent = 'Get more hairstyles';
+    
+                // outputContainer.appendChild(moreHairstylesBtn);
+    
+                const existingOutput = document.getElementById('outputContainer');
+                if (existingOutput) {
+                    existingOutput.replaceWith(outputContainer);
+                } else {
+                    document.querySelector('.container').appendChild(outputContainer);
+                }
+    
+                outputImage.onload = function() {
+                    const scrollTarget = outputContainer.offsetTop - window.innerHeight / 2 + outputImage.height / 2;
+                    window.scrollTo({
+                        top: scrollTarget,
+                        behavior: 'smooth'
+                    });
+                };
+            }
         });
     </script>
 </body>

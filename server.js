@@ -8,12 +8,13 @@ const app = express();
 const port = 3000;
 
 // Store IP usage
-const ipUsage = new Map();
+// const ipUsage = new Map();
 
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(bodyParser.json({limit: '50mb'}));
 
 // Middleware to check IP usage
+/*
 const checkIpUsage = (req, res, next) => {
     const ip = req.ip;
     const usageCount = ipUsage.get(ip) || 0;
@@ -25,8 +26,9 @@ const checkIpUsage = (req, res, next) => {
     ipUsage.set(ip, usageCount + 1);
     next();
 };
+*/
 
-app.post('/upload', checkIpUsage, async (req, res) => {
+app.post('/upload', /* checkIpUsage, */ async (req, res) => {
     const { image1, image2 } = req.body;
 
     try {
